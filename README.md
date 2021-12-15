@@ -22,6 +22,8 @@
         It also returns the version and the name of the client's Operating System.
         For now, mrKitty is not doing too much, I just wanted to learn how can I actually do this.
         There is a lot of work, I will add other functionalities sooner or later.
+        
+        Sending and receiving is still broken. Going to fix it soon.
 ```
 
 # How do you use it?
@@ -33,3 +35,8 @@ python mainKitty.py
 #for launching the client side
 python kittyPayload.py
 ```
+
+# Requirements
+
+For now, I only used built-in Python modules.
+Python version is Python 3.9.6.
