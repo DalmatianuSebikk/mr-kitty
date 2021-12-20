@@ -125,7 +125,7 @@ if __name__ == "__main__":
             FOR WINDOWS:
             python mainKitty.py --customName kitty --allowconsole False  # creates the "kitty.exe" payload without a visible console.
             python mainKitty.py --format .exe --allowconsole False --obfuscate True #obfuscates the payload and then creates the kitty.exe without a visible console.
-
+            The obfuscation and creating process doesn't work yet.
             ------------------------------------------------------------------
             Since you cannot create .exe files in Linux, I will try to add more functionality to Linux soon. 
             '''
