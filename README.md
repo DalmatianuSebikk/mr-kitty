@@ -26,7 +26,7 @@
         
         What's new in v1.0.1?
         + Solved sending and receiving issues with the buffer
-        + Changed the way the payload uses 
+        + Changed the way the payload uses subprocess to execute the commands
         - The obfuscation and creating process doesn't work yet, will solve this issue in the next versions (need to research on PyInstaller and pyArmor)
 ```
 
